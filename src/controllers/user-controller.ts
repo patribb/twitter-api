@@ -1,4 +1,7 @@
 import {Request, Response} from 'express'
+import {PrismaClient} from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 /**
  * @method POST
@@ -6,7 +9,24 @@ import {Request, Response} from 'express'
  * @access public
  */
 export const createUser = async (req: Request, res: Response) => {
-  res.status(501).json({error: 'Not implemented'})
+  const {email, name, username} = req.body
+  try {
+    const user = await prisma.user.findUnique({where: {email}})
+    if (user) {
+      return res.status(400).json({error: 'User already exists'})
+    }
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        name,
+        username,
+        bio: 'Hello, I"m a new user!',
+      },
+    })
+    return res.status(201).json(newUser)
+  } catch (error) {
+    return res.status(400).json({error: 'Server Error'})
+  }
 }
 
 /**
@@ -15,7 +35,12 @@ export const createUser = async (req: Request, res: Response) => {
  * @access public
  */
 export const getUsers = async (req: Request, res: Response) => {
-  res.status(501).json({error: 'Not implemented'})
+  try {
+    const allUsers = await prisma.user.findMany()
+    res.status(200).json(allUsers)
+  } catch (error) {
+    res.status(500).json({error: 'Server error'})
+  }
 }
 
 /**
@@ -25,7 +50,12 @@ export const getUsers = async (req: Request, res: Response) => {
 */
 export const getUser = async (req: Request, res: Response) => {
   const {id} = req.params
-  res.status(501).json({error: 'Not implemented'})
+  try {
+    const user = await prisma.user.findUnique({where: {id: Number(id)}})
+    res.status(200).json(user)
+  } catch (error) {
+    return res.status(500).json({error: 'Server error'})
+  }
 }
 
 /**
@@ -35,7 +65,20 @@ export const getUser = async (req: Request, res: Response) => {
  */
 export const updateUser = async (req: Request, res: Response) => {
   const {id} = req.params
-  res.status(501).json({error: 'Not implemented'})
+  const {bio, image, name} = req.body
+  try {
+    const user = await prisma.user.update({
+      where: {id: Number(id)},
+      data: {
+        bio,
+        image,
+        name,
+      },
+    })
+    res.status(200).json(user)
+  } catch (error) {
+    return res.status(500).json({error: 'Error updating user'})
+  }
 }
 
 /**
@@ -45,5 +88,10 @@ export const updateUser = async (req: Request, res: Response) => {
  */
 export const deleteUser = async (req: Request, res: Response) => {
   const {id} = req.params
-  res.status(501).json({error: 'Not implemented'})
+  try {
+    await prisma.user.delete({where: {id: Number(id)}})
+    return res.status(200).json({message: 'User deleted'})
+  } catch (error) {
+    return res.status(500).json({error: 'Server error'})
+  }
 }
